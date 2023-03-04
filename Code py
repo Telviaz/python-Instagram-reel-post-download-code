@@ -1,0 +1,61 @@
+import os
+import requests
+from instaloader import Instaloader, Profile
+
+# Create an instance of Instaloader
+L = Instaloader()
+
+# Authenticate with Instagram
+username = "your_username"
+password = "your_password"
+L.context.log("Logging in...")
+L.load_session_from_file(username)
+if not L.context.is_logged_in:
+    L.context.log("Login failed!")
+    exit()
+
+# Download reels
+def download_reels(user):
+    profile = Profile.from_username(L.context, user)
+    for post in profile.get_posts():
+        if post.is_reel:
+            L.context.log(f"Downloading reel from {post.owner_username}")
+            filename = f"{post.owner_username}_reel_{post.date_utc}.mp4"
+            url = f"https://www.instagram.com/reel/{post.shortcode}"
+            r = requests.get(url, stream=True)
+            with open(filename, "wb") as f:
+                for chunk in r.iter_content(chunk_size=1024):
+                    if chunk:
+                        f.write(chunk)
+            L.context.log(f"Downloaded reel from {post.owner_username}")
+
+# Download stories
+def download_stories(user):
+    profile = Profile.from_username(L.context, user)
+    for story in profile.get_stories():
+        filename = f"{user}_story_{story.date_utc}.jpg"
+        story.download(filename)
+        L.context.log(f"Downloaded story from {user}")
+
+# Download posts
+def download_posts(user):
+    profile = Profile.from_username(L.context, user)
+    for post in profile.get_posts():
+        filename = f"{user}_post_{post.date_utc}.jpg"
+        L.download_pic(filename, post.url)
+        L.context.log(f"Downloaded post from {user}")
+
+# Show user account info
+def show_user_info(user):
+    profile = Profile.from_username(L.context, user)
+    L.context.log(f"Username: {profile.username}")
+    L.context.log(f"Full Name: {profile.full_name}")
+    L.context.log(f"Followers: {profile.followers}")
+    L.context.log(f"Following: {profile.followees}")
+    L.context.log(f"Bio: {profile.biography}")
+
+# Call the functions to download content and show account info
+download_reels("username")
+download_stories("username")
+download_posts("username")
+show_user_info("username")
